@@ -2,6 +2,7 @@
 :: Author - Benjamin Carter, PhD
 :: Objective - start and pass arguments to an R script that will classify patients according to the CIBMTR guidelines
 @echo off
+cls
 echo.
 echo.
 echo.
@@ -35,16 +36,17 @@ SET /P var=
 
 echo User entered %var%
 
-IF %var%==1 (^
+if %var% EQU 1 (^
   :: this should start an R script if clicked on?
   "C:\Users\CarteB\OneDrive - BILLINGS CLINIC\Documents\R\R-4.0.2\bin\R.exe" ^
   CMD BATCH ^
-  "C:\Users\CarteB\OneDrive - BILLINGS CLINIC\projects\active\mmClassifier\classification.R"^
+  ".\classification.R"^
   ) ELSE (^
-    IF %var%>1 (^
-    echo Master asks us to dos more than one, but Smeagol doesn't know how to do that yet precious! User must hates us!
+    IF %var% GTR 1 (^
+      echo Master asks us to dos many, but Smeagol doesn't know hows it does it precious!
+      echo User must hates us! Smeagol dies!
       ) ELSE (^
-        IF %var%==0 (^
+        IF %var% EQU 0 (^
           EXIT^
           )^
         )^
