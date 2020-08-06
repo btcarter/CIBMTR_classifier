@@ -13,10 +13,6 @@ echo                                 2020-08-06
 echo +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 echo.
 echo Greetings human!
-echo   O
-echo  /|\
-echo   |
-echo  / \
 echo.
 echo This is a little program that will ingest an Excel workbook (Disease
 echo Tracker), chew on it for a bit and then add the patient classifications to
@@ -33,9 +29,27 @@ echo and watch me go!
 echo.
 echo.
 pause
-:: this should start an R script if clicked on?
-"C:\Users\CarteB\OneDrive - BILLINGS CLINIC\Documents\R\R-4.0.2\bin\R.exe" ^
-CMD BATCH ^
-"C:\Users\CarteB\OneDrive - BILLINGS CLINIC\projects\active\mmClassifier\classification.R"
-echo.
+echo How many patients do you want to classify?
+echo (Please enter a whole number or 0 to exit)
+SET /P var=
+
+echo User entered %var%
+
+IF %var%==1 (^
+  :: this should start an R script if clicked on?
+  "C:\Users\CarteB\OneDrive - BILLINGS CLINIC\Documents\R\R-4.0.2\bin\R.exe" ^
+  CMD BATCH ^
+  "C:\Users\CarteB\OneDrive - BILLINGS CLINIC\projects\active\mmClassifier\classification.R"^
+  ) ELSE (^
+    IF %var%>1 (^
+    echo Master asks us to dos more than one, but Smeagol doesn't know how to do that yet precious! User must hates us!
+      ) ELSE (^
+        IF %var%==0 (^
+          EXIT^
+          )^
+        )^
+  )
+
+timeout 2
+
 echo finished!
