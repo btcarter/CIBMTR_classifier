@@ -3,10 +3,8 @@
 :: Objective - start and pass arguments to an R script that will classify patients according to the CIBMTR guidelines
 @echo off
 cls
-echo.
-echo.
-echo.
-echo.
+
+:: instructions and warnings
 echo +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 echo                             CIBMTR CLASSIFIER
 echo                                version 0.1
@@ -23,6 +21,11 @@ echo This program follows the guidelines from the CIBMTR as published on the
 echo date above. It is your responsibility to ensure they have not changed
 echo between now and then. If they have then it is your responsibility to
 echo contact the programmers and let them know a change is needed.
+echo.
+echo OBLIGATORY WARNING
+echo The operating constraints of this particular program are very rigid. If
+echo the Disease Tracker (excel workbook) varies too much from the template
+echo then this script will crash and burn.
 echo.
 echo INSTRUCTIONS: You will be presented with a popup window to select the
 echo Excel workbook of the patient you wish to classify. Select the workbook
