@@ -57,4 +57,4 @@ if %var% EQU 1 (^
 
 timeout 2
 
-echo finished!
+msg /SERVER:%computername% %Username% 'I am finished'
