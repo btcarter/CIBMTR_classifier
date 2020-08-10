@@ -16,9 +16,14 @@ require(dplyr)
 ############
 
 # user defined parameters
-wb <- file.choose(
-  
-) # path to existing excel workbook (which will be overwritten?)
+wb <- file.choose() # path to existing excel workbook (which will be overwritten?)
+
+df.type <- read_xlsx(
+  path = wb,
+  sheet = "PCD Tracker",
+  n_max = 1,
+  col_names = FALSE
+)
 
 df.xl <- read_xlsx(
   path = wb,
@@ -44,6 +49,23 @@ df.xl <- read_xlsx(
     "imaging_comments"
   )
 )
+
+# determine type of myeloma
+# need to know subtype of myeloma (measurable myeloma, non-measurable, light chain only, and non-secretory)
+
+if (
+  !is.na(df.type[8]) && !is.na(df.type[16])
+){
+  type <- "mm" # secretory multiple myeloma
+} else if (
+  !is.na(df.type[16]) && is.na(df.type[8])
+){
+  type <- "lco" # light chain only multiple myeloma
+} else if (
+  is.na(df.type[8]) && is.na(df.type[16])
+){
+  type <- "ns" # nonsecretory multiple myeloma
+}
 
 # determine patient status by CIBMTR criteria
 
