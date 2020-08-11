@@ -44,7 +44,7 @@ df.xl <- read_xlsx(
     "k_l_ratio",
     "UIFE",
     "UPEP",
-    "Plasma-cytomas",
+    "Plasma_cytomas",
     "lytic_lesions",
     "imaging_comments"
   )
@@ -56,7 +56,7 @@ df.xl <- read_xlsx(
 if (
   !is.na(df.type[8]) && !is.na(df.type[16])
 ){
-  type <- "mm" # secretory multiple myeloma
+  type <- "sm" # secretory multiple myeloma
 } else if (
   !is.na(df.type[16]) && is.na(df.type[8])
 ){
@@ -67,19 +67,86 @@ if (
   type <- "ns" # nonsecretory multiple myeloma
 }
 
-# determine patient status by CIBMTR criteria
 
-df.xl %>% 
+##### DATA CLEANING & PREPARATION
+
+df <- df.xl[!is.na(df.xl$Date), ]
+
+df <- df %>% 
   mutate(
-    Status = if_else(
-      k_l_ratio >= 0.37 & 
-        k_l_ratio <= 3.1 &
-        is.na(bm_interpretation) &
-        SIFE=="ned" &
-        per_plasma_bm < 5,
-      "Measurable and Non-Measurable Multiple Myeloma",
-      
-        
-        
-    )
+    days = (Date - first(Date)) / 86400,
+    days_since_last_encounter = Date - lag(Date),
+    per_plasma_bm = as.numeric(per_plasma_bm),
+    Status = "Not assigned"
   )
+
+
+
+# get basline scores
+
+kappa <- as.numeric(df.xl[df.xl$Notes == "Diagnosis", ]$kappa_FLC)
+lambda <- df.xl[df.xl$Notes == "Diagnosis", ]$lambda_FLC
+kl_diff <- df.xl[df.xl$Notes == "Diagnosis", ]$k_l_diff
+kl_ratio <- df.xl[df.xl$Notes == "Diagnosis", ]$k_l_ratio
+spep <- as.numeric(df.xl$SPEP[1])
+upep <- spep <- as.numeric(df.xl$UPEP[1])
+
+
+##### FUNCTIONS
+
+# determine status of secretory myeloma
+
+secretory_cr <- function(df){
+  df %>% 
+    mutate(
+      Status = if_else(
+        SIFE == "ned" &
+          UIFE == "ned" &
+          is.na(Plasma_cytomas) &
+          per_plasma_bm < 5,
+        "CR",
+        Status,
+        Status
+      )
+    )
+  return(df$Status)
+}
+
+secretory_vgpr <- function(df){
+  df %>% 
+    mutate(
+      if_else(
+        !is.na(SIFE) &
+          !is.na(UIFE) &
+          is.na(SPEP) &
+          is.na(UPEP) &
+          SPEP/spep <= 0.1,
+        "VGPR",
+        Status,
+        Status
+      ) 
+    )
+  return(df$Status)
+}
+
+secretory_pr <- function(df){
+  df %>% 
+    mutate(
+      if_else(
+        SPEP/spep <= 0.5 &
+          UPEP/upep <= 0.1,
+        "PR",
+        Status,
+        Status
+      )
+    )
+  return(df$Status)
+}
+
+secretory_pd <- function(){}
+
+secretory_relapse <- function(){}
+
+# determine status of light chain only myeloma
+
+# determine status of multiple myeloma
