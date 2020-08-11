@@ -77,7 +77,10 @@ df <- df %>%
     days = (Date - first(Date)) / 86400,
     days_since_last_encounter = Date - lag(Date),
     per_plasma_bm = as.numeric(per_plasma_bm),
-    Status = "Not assigned"
+    Status = "Not classified"
+  ) %>% 
+  fill(
+    c(3:16)
   )
 
 
@@ -143,7 +146,21 @@ secretory_pr <- function(df){
   return(df$Status)
 }
 
-secretory_pd <- function(){}
+secretory_pd <- function(df){
+  df %>% 
+    mutate(
+      Status = if_else(
+        !is.na(SIFE) & (
+          as.numeric(SPEP) >= 0.25*spep | 
+            as.numeric(SPEP)-spep >= 0.5 |
+            UPEP - lag(UPEP) >= 200 |
+            per_plasma_bm - lag(per_plasma_bm) / per_plasma_bm >= 0.1
+        ) &
+          
+      )
+    )
+    
+}
 
 secretory_relapse <- function(){}
 
