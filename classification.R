@@ -1,21 +1,25 @@
 # Preamble
-# Author: Benjamin Carter
+# Author: Benjamin T. Carter, PhD
 # Org: Collaborative Science & Innovation, Billings Clinic
 # 
 # 
 # Instructions
 # If you're looking here for instructions then "you're in the wrong place."
+#
 
 
-# Environment
+# Environment ####
 require(readxl)
 require(dplyr)
+library(tidyr)
 
-############
-# Commands #
-############
+# normal lab values ####
+nl_kl_ratio <- as.numeric()
 
-# user defined parameters
+
+# Commands ####
+
+# select the spreadsheet ####
 wb <- file.choose() # path to existing excel workbook (which will be overwritten?)
 
 df.type <- read_xlsx(
@@ -44,13 +48,21 @@ df.xl <- read_xlsx(
     "k_l_ratio",
     "UIFE",
     "UPEP",
-    "Plasma_cytomas",
+    "Plasmacytomas",
+    "pc_count",
+    "pc_size",
     "lytic_lesions",
-    "imaging_comments"
+    "lesion_count",
+    "lesion_size",
+    "imaging_comments",
+    "blood_ca",
+    "hgb",
+    "sCr",
+    "sVisc"
   )
 )
 
-# determine type of myeloma
+# determine type of myeloma ####
 # need to know subtype of myeloma (measurable myeloma, non-measurable, light chain only, and non-secretory)
 
 if (
@@ -65,104 +77,110 @@ if (
   is.na(df.type[8]) && is.na(df.type[16])
 ){
   type <- "ns" # nonsecretory multiple myeloma
+} else {
+  stop("Myeloma family is unidentifiable in this spreadsheet.") # wtf is this?
 }
 
+# DATA CLEANING & PREPARATION ####
 
-##### DATA CLEANING & PREPARATION
-
-df <- df.xl[!is.na(df.xl$Date), ]
-
-df <- df %>% 
+df.filled <- df.xl[!is.na(df.xl$Date), ] %>% 
+  fill(2:length(colnames(df.xl))) %>% 
   mutate(
-    days = (Date - first(Date)) / 86400,
+    SPEP = as.numeric(SPEP),
+    UPEP = as.numeric(UPEP),
+    days_since_first_encounter = (Date - first(Date)) / 86400,
     days_since_last_encounter = Date - lag(Date),
     per_plasma_bm = as.numeric(per_plasma_bm),
-    Status = "Not classified"
-  ) %>% 
-  fill(
-    c(3:16)
+    Status = ""
   )
 
+# get baseline scores ####
+baseline <- list()
+
+baseline$kappa <- df.filled %>% 
+  filter(
+    !is.na(kappa_FLC)
+  ) %>% 
+  select(
+    Date,
+    value = kappa_FLC
+  ) %>% 
+  slice(1)
+
+baseline$lambda <- df.filled %>% 
+  filter(
+    !is.na(lambda_FLC)
+  ) %>% 
+  select(
+    Date,
+    value = lambda_FLC
+  ) %>% 
+  slice(1)
+
+baseline$k_l_diff <- df.filled %>% 
+  filter(
+    !is.na(k_l_diff)
+  ) %>% 
+  select(
+    Date,
+    value = k_l_diff
+  ) %>% 
+  slice(1)
+
+baseline$k_l_ratio <- df.filled %>% 
+  filter(
+    !is.na(k_l_ratio)
+  ) %>% 
+  select(
+    Date,
+    value = k_l_ratio
+  ) %>% 
+  slice(1)
+
+baseline$SPEP <- df.filled %>% 
+  filter(
+    !is.na(SPEP)
+  ) %>% 
+  select(
+    Date,
+    value = SPEP
+  ) %>% 
+  slice(1)
+
+baseline$UPEP <- df.filled %>% 
+  filter(
+    !is.na(UPEP)
+  ) %>% 
+  select(
+    Date,
+    value = UPEP
+  ) %>% 
+  slice(1)
 
 
-# get basline scores
-
-kappa <- as.numeric(df.xl[df.xl$Notes == "Diagnosis", ]$kappa_FLC)
-lambda <- df.xl[df.xl$Notes == "Diagnosis", ]$lambda_FLC
-kl_diff <- df.xl[df.xl$Notes == "Diagnosis", ]$k_l_diff
-kl_ratio <- df.xl[df.xl$Notes == "Diagnosis", ]$k_l_ratio
-spep <- as.numeric(df.xl$SPEP[1])
-upep <- spep <- as.numeric(df.xl$UPEP[1])
-
-
-##### FUNCTIONS
+# FUNCTIONS ####
 
 # determine status of secretory myeloma
 
-secretory_cr <- function(df){
-  df %>% 
-    mutate(
-      Status = if_else(
-        SIFE == "ned" &
-          UIFE == "ned" &
-          is.na(Plasma_cytomas) &
-          per_plasma_bm < 5,
-        "CR",
-        Status,
-        Status
-      )
+scr_secretory <- function(k_l_ratio,
+                          bm_results, # which value is this?
+                          UIFE,
+                          SIFE,
+                          Plasmacytomas,
+                          per_plasma_bm
+                          ){
+  if (
+    k_l_ratio = nl_kl_ratio &
+    bm_results = & # negative?
+    UIFE == "ned" &
+    SIFE == "ned" &
+    Plasmacytomas == "no" & (
+      per_plasma_bm < 5 | is.na(per_plasma_bm) # will it be 0 or some other value?
     )
-  return(df$Status)
+  ){
+    return("sCR")
+  }
 }
-
-secretory_vgpr <- function(df){
-  df %>% 
-    mutate(
-      if_else(
-        !is.na(SIFE) &
-          !is.na(UIFE) &
-          is.na(SPEP) &
-          is.na(UPEP) &
-          SPEP/spep <= 0.1,
-        "VGPR",
-        Status,
-        Status
-      ) 
-    )
-  return(df$Status)
-}
-
-secretory_pr <- function(df){
-  df %>% 
-    mutate(
-      if_else(
-        SPEP/spep <= 0.5 &
-          UPEP/upep <= 0.1,
-        "PR",
-        Status,
-        Status
-      )
-    )
-  return(df$Status)
-}
-
-secretory_pd <- function(df){
-  df %>% 
-    mutate(
-      Status = if_else(
-        !is.na(SIFE) & (
-          as.numeric(SPEP) >= 0.25*spep | 
-            as.numeric(SPEP)-spep >= 0.5 |
-            UPEP - lag(UPEP) >= 200 |
-            per_plasma_bm - lag(per_plasma_bm) / per_plasma_bm >= 0.1
-        ) &
-          
-      )
-    )
-    
-}
-
-secretory_relapse <- function(){}
 
 # determine status of light chain only myeloma
 
